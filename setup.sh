@@ -3,7 +3,7 @@
 # Define variables
 env_file="env.vars"
 NETWORK_NAME="akeyless-network"
-#AKEYLESS_ACCOUNT_ID="acc-qwuumdbdxi1g" # Change me, only use if your email is associated with more than 1 account
+AKEYLESS_ACCOUNT_ID="acc-qwuumdbdxi1g" # Change me, only use if your email is associated with more than 1 account
 GW_WEB="18888"
 GW_CONF="8000"
 GW_API="8081"
@@ -25,8 +25,15 @@ BASE_URL="https://akeyless-cli.s3.us-east-2.amazonaws.com/cli/latest/production"
 prompt_for_input() {
   local prompt_message=$1
   local var_name=$2
+  local secret=$3  # Set this to 'true' if input is sensitive (e.g., passwords)
+  
   if [ -z "${!var_name}" ]; then
-    read -p "$prompt_message " input_value
+    if [ "$secret" = "true" ]; then
+      read -s -p "$prompt_message " input_value
+      echo  # Moves to the next line after input (without showing input text)
+    else
+      read -p "$prompt_message " input_value
+    fi
     export $var_name="$input_value"
     echo "$var_name=$input_value" >> "$env_file"
   else
@@ -55,16 +62,17 @@ $CLI update
 
 # Prompt user for LAB ID
 prompt_for_input "Enter a friendly name for this lab (e.g., akeyless-lab):" LAB_ID
-prompt_for_input "Enter your UID auth access-id (e.g., P-abcdefg):" ADMIN_ACCESS_ID
-prompt_for_input "Enter POSTGRESQL_PASSWORD:" POSTGRESQL_PASSWORD
+prompt_for_input "Enter the email address from your Akeyless console account:" admin_email
+prompt_for_input "Enter the password for your Akeyless console account email login:" admin_password true  # Secret input
+prompt_for_input "Enter POSTGRESQL_PASSWORD:" POSTGRESQL_PASSWORD true  # Secret input
 prompt_for_input "Enter POSTGRESQL_USERNAME:" POSTGRESQL_USERNAME
 prompt_for_input "Enter database target name:" DB_TARGET_NAME
 
 echo "All required components are checked and installed if necessary."
 
 # Configure CLI
-"$CLI" configure --profile email --access-type password --admin-email "$admin_email" --admin-password "$admin_password"  >/dev/null 2>&1
-
+"$CLI" configure --profile email --access-type password --admin-email "$admin_email" --admin-password "$admin_password" --account-id $AKEYLESS_ACCOUNT_ID >/dev/null 2>&1
+echo "CLI configured..."
 #Add akeyless CLI auto completion
 sudo tee /etc/bash_completion.d/akeyless_completion >/dev/null <<'EOF'
 _akeyless() 
@@ -91,7 +99,7 @@ EOF
 source /etc/bash_completion.d/akeyless_completion
 
 #Cleanup
-$CLI auth-method delete -n "/$LAB_ID/UIDAuth"
+$CLI auth-method delete -n "/$LAB_ID/UIDAuth" $CLI_PROFILE
 # Create Akeyless UID Auth Method using the Akeyless CLI
 $CLI auth-method create universal-identity -n "/$LAB_ID/UIDAuth" --jwt-ttl 10
 TOKEN=$("$CLI" uid-generate-token -n "/$LAB_ID/UIDAuth" | grep 'Token:' | awk '{print $NF}')
@@ -105,16 +113,16 @@ CAPABILITIES=('create' 'read' 'update' 'delete' 'list')
 capabilities_args=$(printf " --capability %s" "${CAPABILITIES[@]}")
 
 ROLE_NAME="${LAB_ID}-role"
-"$CLI" create-role --name "$ROLE_NAME"
-"$CLI" set-role-rule --role-name "$ROLE_NAME" --path "/$LAB_ID/*" --rule-type role-rule $capabilities_args
-"$CLI" set-role-rule --role-name "$ROLE_NAME" --path "/$LAB_ID/*" --rule-type target-rule $capabilities_args
-"$CLI" set-role-rule --role-name "$ROLE_NAME" --path "/$LAB_ID/*" --rule-type auth-method-rule $capabilities_args 
-"$CLI" set-role-rule --role-name "$ROLE_NAME" --path "/$LAB_ID/*" --rule-type item-rule $capabilities_args
+"$CLI" create-role --name "$ROLE_NAME" $CLI_PROFILE
+"$CLI" set-role-rule --role-name "$ROLE_NAME" --path "/$LAB_ID/*" --rule-type role-rule $capabilities_args $CLI_PROFILE
+"$CLI" set-role-rule --role-name "$ROLE_NAME" --path "/$LAB_ID/*" --rule-type target-rule $capabilities_args $CLI_PROFILE
+"$CLI" set-role-rule --role-name "$ROLE_NAME" --path "/$LAB_ID/*" --rule-type auth-method-rule $capabilities_args $CLI_PROFILE
+"$CLI" set-role-rule --role-name "$ROLE_NAME" --path "/$LAB_ID/*" --rule-type item-rule $capabilities_args $CLI_PROFILE
 #associate the new role with the auth method
-"$CLI" assoc-role-am --role-name "$ROLE_NAME" --am-name "/$LAB_ID/UIDAuth"
+"$CLI" assoc-role-am --role-name "$ROLE_NAME" --am-name "/$LAB_ID/UIDAuth" $CLI_PROFILE
 
-$CLI auth --access-type universal_identity --access-id $ADMIN_ACCESS_ID --uid_token $TOKEN
-rm -rf ~/.akeyless/profiles/email.toml
+$CLI auth --access-type universal_identity --access-id $ADMIN_ACCESS_ID --uid_token $TOKEN $CLI_PROFILE
+#rm -rf ~/.akeyless/profiles/email.toml
 
 # Fetch the changelog
 changelog=$(curl -s https://changelog.akeyless.io)
