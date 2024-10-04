@@ -51,6 +51,8 @@ install_if_missing() {
     fi
 }
 
+sudo apt update >/dev/null 2>&1
+
 # Install necessary tools
 install_if_missing "gh" "sudo apt-get update && sudo apt-get install gh -y"
 install_if_missing "yq" "sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq >/dev/null 2>&1 && sudo chmod +x /usr/local/bin/yq"
@@ -282,7 +284,8 @@ $CLI rotated-secret create postgresql \
 --rotator-type target \
 --auto-rotate true \
 --rotation-interval 1 \
---rotation-hour $ROTATION_HOUR
+--rotation-hour $ROTATION_HOUR \
+--uid-token $TOKEN
 
 
 # Define the SQL statements for creating and revoking Super users
