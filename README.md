@@ -1,9 +1,9 @@
-# Akeyless-azure-lab
-* A docker based Akeyless lab in Azure
+# Akeyless-Codespaces-lab
+* A docker based Akeyless lab in Github Codespaces
 
 ## Pre-requisite
 * Register for a free Akeyless account: console.akeyless.io
-* Have an active Azure AD subscription: you will need this to create VM
+* Have an active Codespaces subscription: Free for the first 60 hours
 
 ## Nice-to-have
 SAML / OIDC auth method: you'll use this for login to the UI and CLI access. --> https://docs.akeyless.io/docs/saml
@@ -14,8 +14,8 @@ SAML / OIDC auth method: you'll use this for login to the UI and CLI access. -->
 * Clone the repo locally and run the azure install script
 
 ## Outcomes
-* Creates an Azure VM with managed identity
-* Creates Azure AD auth method:  you'll use this auth method to authenticate the akeyless gateway in your Azure VM to your account --> https://docs.akeyless.io/docs/azure-ad
+* Creates a codespaces account
+* Creates .. AD auth method:  you'll use this auth method to authenticate the akeyless gateway in your Azure VM to your account --> https://docs.akeyless.io/docs/azure-ad
 * Creates Docker Containers: akeyless-gateway, Postgresql, Grafana, and custom-server.
 * Custom-server will be used for creating dynamic / rotated secret objects for custom and non-supported applications e.g. Grafana
 * Configures Akeyelss components: Gateway, Auth Methods, Access-Roles, Gateway Permissions
