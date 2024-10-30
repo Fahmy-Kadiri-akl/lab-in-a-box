@@ -59,6 +59,7 @@ install_if_missing "yq" "sudo wget https://github.com/mikefarah/yq/releases/late
 install_if_missing "nc" "sudo apt-get install netcat -y"
 install_if_missing "jq" "sudo apt-get install jq -y"
 install_if_missing "akeyless" "mkdir -p '$CLI_PATH' && curl -o '$CLI_PATH/akeyless' $BASE_URL/cli-linux-amd64 && chmod +x '$CLI_PATH/akeyless' && '$CLI_PATH/akeyless' --init"
+echo 'export PATH=$PATH:/home/codespace/.akeyless/bin' >> ~/.bashrc
 source ~/.bashrc
 $CLI update
 
@@ -277,7 +278,7 @@ fi
 
 $CLI rotated-secret create postgresql \
 --name "/$LAB_ID/Rotated/${DB_TARGET_NAME}-rotate" \
---gateway-url "http://127.0.0.1:8000" \
+--gateway-url "${AKEYLESS_GATEWAY_HOST:8000}" \
 --target-name "/$LAB_ID/Databases/${DB_TARGET_NAME}" \
 --authentication-credentials use-target-creds \
 --password-length 16 \
